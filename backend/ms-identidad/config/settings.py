@@ -152,8 +152,10 @@ AUTH_TOKEN_TTL_HOURS = int(
 # Por ahora no existen endpoints de negocio.
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "identidad.authentication.IdentidadTokenAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated"
+        "rest_framework.permissions.IsAuthenticated",
     ],
 }

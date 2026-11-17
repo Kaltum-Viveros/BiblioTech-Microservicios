@@ -1,6 +1,8 @@
 """Rutas internas de salud."""
 
 from django.urls import path
+from django.urls import include
+
 
 from identidad.health import (
     health_live,
@@ -20,4 +22,10 @@ urlpatterns = [
         health_ready,
         name="health-ready"
     ),
+]
+
+
+
+urlpatterns += [
+    path("api/", include("identidad.urls")),
 ]
