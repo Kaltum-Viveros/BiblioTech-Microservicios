@@ -1,0 +1,3132 @@
+{
+  "info": {
+    "name": "BiblioTech | MS Identidad — API externa, interna y gateway",
+    "_postman_id": "73464db0-2032-40ea-8d95-56b2d0157017",
+    "description": "Colección unificada para C01–C07 de ms-identidad. Una sola colección sustituye las colecciones C05/C06/C07. Carpetas 00–03: API pública por rol mediante Nginx :8000; carpeta 04: seguridad de gateway y CORS; carpeta 05: API interna directamente a Identidad :18081. Ejecutar en orden, una iteración. ANTES DE EJECUTAR: establecer password_demo (contraseña del seed), password_nuevo (contraseña fuerte para usuario generado) e internal_key (IDENTIDAD_INTERNAL_API_KEY configurada en .env). Las peticiones 🚫 son errores intencionales; aprobar significa obtener el HTTP esperado. El CRUD de bibliotecario genera un nuevo usuario persistente con correo único en db_identidad; no existe DELETE en este servicio. No contiene tokens, claves internas ni contraseñas reales. No compartir los valores rellenados desde Postman. Las rutas /api/catalogo/ y /api/prestamos/ se esperan 404 hasta incorporar sus microservicios.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 — Disponibilidad y errores sin sesión (API externa)",
+      "item": [
+        {
+          "name": "✅ Liveness de Identidad — 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/health/live/",
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Al comenzar la ejecución completa, limpia tokens e IDs anteriores de esta colección."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "[\"token_estudiante\",\"token_docente\",\"token_bibliotecario\",\"id_estudiante\",\"id_docente\",\"id_bibliotecario\",\"usuario_prueba_id\",\"usuario_prueba_email\",\"rol_estudiante_id\",\"rol_docente_id\",\"rol_bibliotecario_id\"].forEach(k=>pm.collectionVariables.unset(k));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 — ✅ Liveness de Identidad — 200\", () => pm.response.to.have.status(200));",
+                  "if(pm.response.code===200)pm.test(\"Servicio activo\",()=>{const j=pm.response.json();pm.expect(j.servicio).to.eql(\"identidad\");pm.expect(j.estado).to.eql(\"ok\");});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "✅ Readiness MySQL — 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/health/ready/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 — ✅ Readiness MySQL — 200\", () => pm.response.to.have.status(200));",
+                  "if(pm.response.code===200)pm.test(\"Conexión de base lista\",()=>pm.expect(pm.response.json().estado).to.eql(\"ok\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "🚫 /auth/me/ sin token — 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/auth/me/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401 — 🚫 /auth/me/ sin token — 401\", () => pm.response.to.have.status(401));",
+                  "if(pm.response.code===401)pm.test(\"Challenge Bearer\",()=>pm.expect(pm.response.headers.get(\"WWW-Authenticate\")).to.eql(\"Bearer\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "🚫 /usuarios/ sin token — 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/usuarios/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401 — 🚫 /usuarios/ sin token — 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "🚫 /roles/ sin token — 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/roles/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401 — 🚫 /roles/ sin token — 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "🚫 /auth/logout/ sin token — 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/auth/logout/",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401 — 🚫 /auth/logout/ sin token — 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "🚫 Token inventado — 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/auth/me/",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_invalido}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Usa el literal de prueba configurado en token_invalido; no depende de sesiones previas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401 — 🚫 Token inventado — 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "🚫 Login con contraseña incorrecta — 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/auth/login/",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email_estudiante}}\",\n  \"password\": \"ContrasenaIncorrecta!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401 — 🚫 Login con contraseña incorrecta — 401\", () => pm.response.to.have.status(401));",
+                  "if(pm.response.code===401)pm.test(\"No devuelve token\",()=>pm.expect(pm.response.json()).to.not.have.property(\"token\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "🚫 Login con usuario inexistente — 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/auth/login/",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"inexistente.postman@test.local\",\n  \"password\": \"{{password_demo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401 — 🚫 Login con usuario inexistente — 401\", () => pm.response.to.have.status(401));",
+                  "if(pm.response.code===401)pm.test(\"Mensaje genérico\",()=>pm.expect(pm.response.json().detail).to.eql(\"Credenciales incorrectas.\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "🚫 Login con correo inválido — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/auth/login/",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"correo-mal-formado\",\n  \"password\": \"{{password_demo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400 — 🚫 Login con correo inválido — 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code === 400) pm.test(\"Error asociado a email\", () => pm.expect(pm.response.json()).to.have.property(\"email\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "🚫 Login sin contraseña — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/auth/login/",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email_estudiante}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400 — 🚫 Login sin contraseña — 400\", () => pm.response.to.have.status(400));",
+                  "if (pm.response.code === 400) pm.test(\"Error asociado a password\", () => pm.expect(pm.response.json()).to.have.property(\"password\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "No requiere token; casos 401/400 son resultados intencionales."
+    },
+    {
+      "name": "01 — API EXTERNA · ESTUDIANTE",
+      "item": [
+        {
+          "name": "01 — Casos de éxito",
+          "item": [
+            {
+              "name": "✅ Login estudiante — 200",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/auth/login/",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email_estudiante}}\",\n  \"password\": \"{{password_demo}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.unset(\"token_estudiante\");",
+                      "pm.collectionVariables.unset(\"id_estudiante\");"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Login estudiante — 200\", () => pm.response.to.have.status(200));",
+                      "if (pm.response.code === 200) {",
+                      " const j = pm.response.json();",
+                      " pm.test(\"Rol de la respuesta: estudiante\", () => pm.expect(j.usuario.rol.nombre).to.eql(\"estudiante\"));",
+                      " pm.test(\"Contrato de login\", () => {",
+                      "   pm.expect(j.tipo_token).to.eql(\"Bearer\");",
+                      "   pm.expect(j.token).to.be.a(\"string\").and.not.empty;",
+                      "   pm.expect(Date.parse(j.expira_en)).to.be.above(Date.now());",
+                      "   pm.expect(j.usuario).to.have.all.keys(\"usuario_id\", \"nombre\", \"email\", \"rol\");",
+                      "   pm.expect(j.usuario).to.not.have.property(\"contrasena_hash\");",
+                      " });",
+                      " pm.collectionVariables.set(\"token_estudiante\", j.token);",
+                      " pm.collectionVariables.set(\"id_estudiante\", String(j.usuario.usuario_id));",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Mi perfil estudiante — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/me/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_estudiante}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Mi perfil estudiante — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200)pm.test(\"Identidad y datos seguros\",()=>{",
+                      "  const j=pm.response.json();",
+                      "  pm.expect(j.email).to.eql(pm.collectionVariables.get(\"email_estudiante\"));",
+                      "  pm.expect(j.rol.nombre).to.eql(\"estudiante\");",
+                      "  pm.expect(j).to.have.all.keys(\"usuario_id\",\"nombre\",\"email\",\"rol\");",
+                      "  pm.expect(j).to.not.have.property(\"contrasena_hash\");",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Estudiante accede a lector — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/access/lector/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_estudiante}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Estudiante accede a lector — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200)pm.test(\"Mensaje de lector\",()=>pm.expect(pm.response.json().detail).to.eql(\"Acceso autorizado para estudiante o docente.\"));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "02 — Errores intencionales de permisos",
+          "item": [
+            {
+              "name": "🚫 Estudiante no accede como bibliotecario — 403",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/access/bibliotecario/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_estudiante}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Estudiante no accede como bibliotecario — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Estudiante no puede ver roles — 403",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/roles/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_estudiante}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Estudiante no puede ver roles — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Estudiante no puede listar usuarios — 403",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/usuarios/?page=1&page_size=10",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_estudiante}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Estudiante no puede listar usuarios — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Estudiante no puede registrar usuarios — 403",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_estudiante}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"No autorizado\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Estudiante no puede registrar usuarios — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Estudiante no puede ver detalle administrativo — 403",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/usuarios/{{id_estudiante}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_estudiante}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Estudiante no puede ver detalle administrativo — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Estudiante no puede editarse por API administrativa — 403",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/{{id_estudiante}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_estudiante}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"telefono\": \"2221111111\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Estudiante no puede editarse por API administrativa — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "03 — Cerrar sesión y revocación",
+          "item": [
+            {
+              "name": "✅ Logout estudiante — 204",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/auth/logout/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_estudiante}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 204 — ✅ Logout estudiante — 204\", () => pm.response.to.have.status(204));",
+                      "if(pm.response.code===204)pm.test(\"Sin cuerpo\",()=>pm.expect(pm.response.text()).to.eql(\"\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Token revocado de estudiante — 401",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/me/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_estudiante}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 401 — 🚫 Token revocado de estudiante — 401\", () => pm.response.to.have.status(401));",
+                      "if(pm.response.code===401)pm.test(\"Token inválido o revocado\",()=>pm.expect(pm.response.json().detail).to.eql(\"Token inválido o revocado.\"));",
+                      "if(pm.response.code===401)pm.collectionVariables.unset(\"token_estudiante\");"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "description": "El estudiante puede identificarse y consultar permiso de lector, pero no administra usuarios."
+    },
+    {
+      "name": "02 — API EXTERNA · DOCENTE",
+      "item": [
+        {
+          "name": "01 — Casos de éxito",
+          "item": [
+            {
+              "name": "✅ Login docente — 200",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/auth/login/",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email_docente}}\",\n  \"password\": \"{{password_demo}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.unset(\"token_docente\");",
+                      "pm.collectionVariables.unset(\"id_docente\");"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Login docente — 200\", () => pm.response.to.have.status(200));",
+                      "if (pm.response.code === 200) {",
+                      " const j = pm.response.json();",
+                      " pm.test(\"Rol de la respuesta: docente\", () => pm.expect(j.usuario.rol.nombre).to.eql(\"docente\"));",
+                      " pm.test(\"Contrato de login\", () => {",
+                      "   pm.expect(j.tipo_token).to.eql(\"Bearer\");",
+                      "   pm.expect(j.token).to.be.a(\"string\").and.not.empty;",
+                      "   pm.expect(Date.parse(j.expira_en)).to.be.above(Date.now());",
+                      "   pm.expect(j.usuario).to.have.all.keys(\"usuario_id\", \"nombre\", \"email\", \"rol\");",
+                      "   pm.expect(j.usuario).to.not.have.property(\"contrasena_hash\");",
+                      " });",
+                      " pm.collectionVariables.set(\"token_docente\", j.token);",
+                      " pm.collectionVariables.set(\"id_docente\", String(j.usuario.usuario_id));",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Mi perfil docente — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/me/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_docente}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Mi perfil docente — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200)pm.test(\"Identidad y datos seguros\",()=>{",
+                      "  const j=pm.response.json();",
+                      "  pm.expect(j.email).to.eql(pm.collectionVariables.get(\"email_docente\"));",
+                      "  pm.expect(j.rol.nombre).to.eql(\"docente\");",
+                      "  pm.expect(j).to.have.all.keys(\"usuario_id\",\"nombre\",\"email\",\"rol\");",
+                      "  pm.expect(j).to.not.have.property(\"contrasena_hash\");",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Docente accede a lector — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/access/lector/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_docente}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Docente accede a lector — 200\", () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "02 — Errores intencionales de permisos",
+          "item": [
+            {
+              "name": "🚫 Docente no accede como bibliotecario — 403",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/access/bibliotecario/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_docente}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Docente no accede como bibliotecario — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Docente no puede ver roles — 403",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/roles/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_docente}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Docente no puede ver roles — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Docente no puede listar usuarios — 403",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/usuarios/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_docente}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Docente no puede listar usuarios — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Docente no puede registrar usuarios — 403",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_docente}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"No autorizado\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Docente no puede registrar usuarios — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Docente no puede editar usuarios — 403",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/{{id_docente}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_docente}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"telefono\": \"2221111111\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Docente no puede editar usuarios — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "03 — Cerrar sesión y revocación",
+          "item": [
+            {
+              "name": "✅ Logout docente — 204",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/auth/logout/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_docente}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 204 — ✅ Logout docente — 204\", () => pm.response.to.have.status(204));",
+                      "if(pm.response.code===204)pm.test(\"Sin cuerpo\",()=>pm.expect(pm.response.text()).to.eql(\"\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Token revocado de docente — 401",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/me/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_docente}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 401 — 🚫 Token revocado de docente — 401\", () => pm.response.to.have.status(401));",
+                      "if(pm.response.code===401)pm.test(\"Token inválido o revocado\",()=>pm.expect(pm.response.json().detail).to.eql(\"Token inválido o revocado.\"));",
+                      "if(pm.response.code===401)pm.collectionVariables.unset(\"token_docente\");"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "description": "El docente puede acceder a recursos de lector, pero no administra usuarios."
+    },
+    {
+      "name": "03 — API EXTERNA · BIBLIOTECARIO",
+      "item": [
+        {
+          "name": "01 — Casos de éxito y CRUD",
+          "item": [
+            {
+              "name": "✅ Login bibliotecario — 200",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/auth/login/",
+                "auth": {
+                  "type": "noauth"
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email_bibliotecario}}\",\n  \"password\": \"{{password_demo}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.unset(\"token_bibliotecario\");",
+                      "pm.collectionVariables.unset(\"id_bibliotecario\");"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Login bibliotecario — 200\", () => pm.response.to.have.status(200));",
+                      "if (pm.response.code === 200) {",
+                      " const j = pm.response.json();",
+                      " pm.test(\"Rol de la respuesta: bibliotecario\", () => pm.expect(j.usuario.rol.nombre).to.eql(\"bibliotecario\"));",
+                      " pm.test(\"Contrato de login\", () => {",
+                      "   pm.expect(j.tipo_token).to.eql(\"Bearer\");",
+                      "   pm.expect(j.token).to.be.a(\"string\").and.not.empty;",
+                      "   pm.expect(Date.parse(j.expira_en)).to.be.above(Date.now());",
+                      "   pm.expect(j.usuario).to.have.all.keys(\"usuario_id\", \"nombre\", \"email\", \"rol\");",
+                      "   pm.expect(j.usuario).to.not.have.property(\"contrasena_hash\");",
+                      " });",
+                      " pm.collectionVariables.set(\"token_bibliotecario\", j.token);",
+                      " pm.collectionVariables.set(\"id_bibliotecario\", String(j.usuario.usuario_id));",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Mi perfil bibliotecario — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/me/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Mi perfil bibliotecario — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200)pm.test(\"Identidad y datos seguros\",()=>{",
+                      "  const j=pm.response.json();",
+                      "  pm.expect(j.email).to.eql(pm.collectionVariables.get(\"email_bibliotecario\"));",
+                      "  pm.expect(j.rol.nombre).to.eql(\"bibliotecario\");",
+                      "  pm.expect(j).to.have.all.keys(\"usuario_id\",\"nombre\",\"email\",\"rol\");",
+                      "  pm.expect(j).to.not.have.property(\"contrasena_hash\");",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Acceso bibliotecario — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/access/bibliotecario/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Acceso bibliotecario — 200\", () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Listar roles y obtener IDs — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/roles/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Listar roles y obtener IDs — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200){",
+                      " const roles=pm.response.json();",
+                      " pm.test(\"Solo tres roles de negocio\",()=>pm.expect(roles.map(r=>r.nombre).sort()).to.eql([\"bibliotecario\",\"docente\",\"estudiante\"]));",
+                      " roles.forEach(r=>pm.collectionVariables.set(\"rol_\"+r.nombre+\"_id\",String(r.rol_id)));",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Listar usuarios paginados — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/usuarios/?page=1&page_size=2",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Listar usuarios paginados — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200)pm.test(\"Contrato de paginación Django\",()=>{",
+                      " const j=pm.response.json();pm.expect(j).to.have.all.keys(\"count\",\"next\",\"previous\",\"results\");",
+                      " pm.expect(j.count).to.be.at.least(3);pm.expect(j.results).to.be.an(\"array\");pm.expect(j.results.length).to.be.at.most(2);",
+                      "});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Consultar estudiante del seed — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/usuarios/{{id_estudiante}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Consultar estudiante del seed — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200)pm.test(\"Detalle estudiante\",()=>pm.expect(pm.response.json().rol.nombre).to.eql(\"estudiante\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Registrar usuario de prueba — 201",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Usuario Postman\",\n  \"email\": \"{{usuario_prueba_email}}\",\n  \"direccion\": \"Puebla\",\n  \"telefono\": \"2221234567\",\n  \"rol_id\": \"{{rol_estudiante_id}}\",\n  \"password\": \"{{password_nuevo}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Agrega un usuario real a db_identidad. No hay DELETE público: quedará como dato de prueba."
+              },
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.unset(\"usuario_prueba_id\");",
+                      " const email=\"postman.\"+Date.now()+\".\"+Math.random().toString(36).slice(2,8)+\"@test.local\";",
+                      " pm.collectionVariables.set(\"usuario_prueba_email\", email);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 201 — ✅ Registrar usuario de prueba — 201\", () => pm.response.to.have.status(201));",
+                      "if(pm.response.code===201){",
+                      " const j=pm.response.json();",
+                      " pm.test(\"Usuario creado sin datos sensibles\",()=>{",
+                      "  pm.expect(j.email).to.eql(pm.collectionVariables.get(\"usuario_prueba_email\"));",
+                      "  pm.expect(j.rol.nombre).to.eql(\"estudiante\");",
+                      "  pm.expect(j).to.not.have.property(\"contrasena_hash\");pm.expect(j).to.not.have.property(\"password\");",
+                      " });",
+                      " pm.collectionVariables.set(\"usuario_prueba_id\",String(j.usuario_id));",
+                      "}"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Consultar usuario recién creado — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/usuarios/{{usuario_prueba_id}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Consultar usuario recién creado — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200)pm.test(\"ID y correo coinciden\",()=>{const j=pm.response.json();pm.expect(String(j.usuario_id)).to.eql(pm.collectionVariables.get(\"usuario_prueba_id\"));pm.expect(j.email).to.eql(pm.collectionVariables.get(\"usuario_prueba_email\"));});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Modificar teléfono y dirección — 200",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/{{usuario_prueba_id}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"telefono\": \"2229876543\",\n  \"direccion\": \"Puebla Centro\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Modificar teléfono y dirección — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200)pm.test(\"Campos actualizados\",()=>{const j=pm.response.json();pm.expect(j.telefono).to.eql(\"2229876543\");pm.expect(j.direccion).to.eql(\"Puebla Centro\");});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Cambiar de estudiante a docente — 200",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/{{usuario_prueba_id}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"rol_id\": \"{{rol_docente_id}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Cambiar de estudiante a docente — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200)pm.test(\"Nuevo rol docente\",()=>pm.expect(pm.response.json().rol.nombre).to.eql(\"docente\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Confirmar usuario actualizado — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/usuarios/{{usuario_prueba_id}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Confirmar usuario actualizado — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200)pm.test(\"Datos finales\",()=>{const j=pm.response.json();pm.expect(j.rol.nombre).to.eql(\"docente\");pm.expect(j.telefono).to.eql(\"2229876543\");});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "02 — Errores intencionales y regla de Circulación",
+          "item": [
+            {
+              "name": "🚫 Bibliotecario no accede a lector — 403",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/access/lector/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403 — 🚫 Bibliotecario no accede a lector — 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Correo duplicado — 400",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Duplicado\",\n  \"email\": \"{{email_estudiante}}\",\n  \"rol_id\": \"{{rol_estudiante_id}}\",\n  \"password\": \"{{password_nuevo}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 400 — 🚫 Correo duplicado — 400\", () => pm.response.to.have.status(400));",
+                      "if (pm.response.code === 400) pm.test(\"Error asociado a email\", () => pm.expect(pm.response.json()).to.have.property(\"email\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Correo con formato inválido — 400",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Correo Invalido\",\n  \"email\": \"no-es-un-email\",\n  \"rol_id\": \"{{rol_estudiante_id}}\",\n  \"password\": \"{{password_nuevo}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 400 — 🚫 Correo con formato inválido — 400\", () => pm.response.to.have.status(400));",
+                      "if (pm.response.code === 400) pm.test(\"Error asociado a email\", () => pm.expect(pm.response.json()).to.have.property(\"email\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Contraseña demasiado débil — 400",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Password Debil\",\n  \"email\": \"debil@test.local\",\n  \"rol_id\": \"{{rol_estudiante_id}}\",\n  \"password\": \"123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 400 — 🚫 Contraseña demasiado débil — 400\", () => pm.response.to.have.status(400));",
+                      "if (pm.response.code === 400) pm.test(\"Error asociado a password\", () => pm.expect(pm.response.json()).to.have.property(\"password\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Rol inexistente — 400",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Rol Inexistente\",\n  \"email\": \"rol-inexistente@test.local\",\n  \"rol_id\": 999999,\n  \"password\": \"{{password_nuevo}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 400 — 🚫 Rol inexistente — 400\", () => pm.response.to.have.status(400));",
+                      "if (pm.response.code === 400) pm.test(\"Error asociado a rol_id\", () => pm.expect(pm.response.json()).to.have.property(\"rol_id\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Campo desconocido en registro — 400",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Campo Malo\",\n  \"email\": \"campo-malo@test.local\",\n  \"rol_id\": \"{{rol_estudiante_id}}\",\n  \"password\": \"{{password_nuevo}}\",\n  \"es_admin\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 400 — 🚫 Campo desconocido en registro — 400\", () => pm.response.to.have.status(400));",
+                      "if (pm.response.code === 400) pm.test(\"Error asociado a es_admin\", () => pm.expect(pm.response.json()).to.have.property(\"es_admin\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Intentar modificar password vía PATCH — 400",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/{{usuario_prueba_id}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"password\": \"NoPermitido123!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 400 — 🚫 Intentar modificar password vía PATCH — 400\", () => pm.response.to.have.status(400));",
+                      "if (pm.response.code === 400) pm.test(\"Error asociado a password\", () => pm.expect(pm.response.json()).to.have.property(\"password\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Intentar modificar hash vía PATCH — 400",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/{{usuario_prueba_id}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"contrasena_hash\": \"hash-falso\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 400 — 🚫 Intentar modificar hash vía PATCH — 400\", () => pm.response.to.have.status(400));",
+                      "if (pm.response.code === 400) pm.test(\"Error asociado a contrasena_hash\", () => pm.expect(pm.response.json()).to.have.property(\"contrasena_hash\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Usuario inexistente — 404",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/usuarios/999999999/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 404 — 🚫 Usuario inexistente — 404\", () => pm.response.to.have.status(404));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Editar usuario inexistente — 404",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/999999999/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"telefono\": \"2221234567\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 404 — 🚫 Editar usuario inexistente — 404\", () => pm.response.to.have.status(404));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Método PUT no permitido — 405",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/{{usuario_prueba_id}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"No permitido\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 405 — 🚫 Método PUT no permitido — 405\", () => pm.response.to.have.status(405));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Cambio a bibliotecario sin Circulación — 503",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/usuarios/{{usuario_prueba_id}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"rol_id\": \"{{rol_bibliotecario_id}}\",\n  \"nombre\": \"No debe guardarse\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Esperado solo en C05, cuando Circulación NO está configurada. Protege la regla de préstamos activos."
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 503 — 🚫 Cambio a bibliotecario sin Circulación — 503\", () => pm.response.to.have.status(503));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "✅ Sin cambio parcial tras el 503 — 200",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/usuarios/{{usuario_prueba_id}}/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200 — ✅ Sin cambio parcial tras el 503 — 200\", () => pm.response.to.have.status(200));",
+                      "if(pm.response.code===200)pm.test(\"Fail closed sin modificaciones\",()=>{const j=pm.response.json();pm.expect(j.rol.nombre).to.eql(\"docente\");pm.expect(j.nombre).to.eql(\"Usuario Postman\");});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "03 — Cerrar sesión y revocación",
+          "item": [
+            {
+              "name": "✅ Logout bibliotecario — 204",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{base_url}}/auth/logout/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 204 — ✅ Logout bibliotecario — 204\", () => pm.response.to.have.status(204));",
+                      "if(pm.response.code===204)pm.test(\"Sin cuerpo\",()=>pm.expect(pm.response.text()).to.eql(\"\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "🚫 Token revocado de bibliotecario — 401",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/auth/me/",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token_bibliotecario}}",
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 401 — 🚫 Token revocado de bibliotecario — 401\", () => pm.response.to.have.status(401));",
+                      "if(pm.response.code===401)pm.test(\"Token inválido o revocado\",()=>pm.expect(pm.response.json().detail).to.eql(\"Token inválido o revocado.\"));",
+                      "if(pm.response.code===401)pm.collectionVariables.unset(\"token_bibliotecario\");"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "description": "El bibliotecario administra roles y usuarios. La prueba de 503 es intencional mientras Circulación no existe."
+    },
+    {
+      "name": "04 — GATEWAY · Protección de rutas, CORS y errores",
+      "item": [
+        {
+          "name": "GET /api/auth/me/ sin token 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/api/auth/me/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401: GET /api/auth/me/ sin token 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/roles/ sin token 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/api/roles/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 401: GET /api/roles/ sin token 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bloqueo /api/internal/ sin clave 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/api/internal/usuarios/1/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404: Bloqueo /api/internal/ sin clave 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bloqueo /api/internal/ con clave 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Internal-Service-Key",
+                "value": "{{internal_key}}"
+              }
+            ],
+            "url": "{{gateway_url}}/api/internal/usuarios/1/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404: Bloqueo /api/internal/ con clave 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bloqueo /internal/ 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/internal/usuarios/1/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404: Bloqueo /internal/ 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Catálogo todavía no integrado 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/api/catalogo/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404: Catálogo todavía no integrado 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"404 propio del gateway\",()=>pm.expect(pm.response.json().detail).to.eql(\"Ruta no disponible en el gateway.\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Préstamos todavía no integrados 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/api/prestamos/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404: Préstamos todavía no integrados 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ruta auth inexistente 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/api/auth/otra/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404: Ruta auth inexistente 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ruta usuarios inexistente 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gateway_url}}/api/usuarios/1/editar/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404: Ruta usuarios inexistente 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Preflight Angular login 200",
+          "request": {
+            "method": "OPTIONS",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:4200"
+              },
+              {
+                "key": "Access-Control-Request-Method",
+                "value": "POST"
+              },
+              {
+                "key": "Access-Control-Request-Headers",
+                "value": "content-type,authorization"
+              }
+            ],
+            "url": "{{gateway_url}}/api/auth/login/",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200: Preflight Angular login 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Origen Angular autorizado\",()=>pm.expect(pm.response.headers.get(\"Access-Control-Allow-Origin\")).to.eql(\"http://localhost:4200\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 — API INTERNA · Contratos REST entre microservicios",
+      "description": "Se ejecuta después de la API externa. Genera un token propio, valida contratos, prueba errores intencionales y lo revoca al final.",
+      "item": [
+        {
+          "name": "00 — Preparación",
+          "item": [
+            {
+              "name": "01 Login estudiante (genera token)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/auth/login/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"esme@bibliotech.com\",\n  \"password\": \"{{password_demo}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "const j = pm.response.json();",
+                      "pm.test(\"Contrato Bearer\", () => { pm.expect(j.tipo_token).to.eql(\"Bearer\"); pm.expect(j.usuario.rol.nombre).to.eql(\"estudiante\"); });",
+                      "if (pm.response.code === 200 && j.token) { pm.collectionVariables.set(\"token_estudiante\", j.token); pm.collectionVariables.set(\"usuario_id\", String(j.usuario.usuario_id)); }"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "01 — Éxito esperado (200)",
+          "item": [
+            {
+              "name": "01 Validar token vigente",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Internal-Service-Key",
+                    "value": "{{internal_key}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{internal_base}}/auth/validar/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"{{token_estudiante}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "const j=pm.response.json();",
+                      "pm.test(\"Sesión vigente y rol correcto\",()=>{pm.expect(j.valido).to.eql(true);pm.expect(j.usuario.rol.nombre).to.eql(\"estudiante\");pm.expect(j.expira_en).to.be.a(\"string\");});",
+                      "pm.test(\"Sin hashes\",()=>{pm.expect(j).to.not.have.property(\"token_hash\");pm.expect(j.usuario).to.not.have.property(\"contrasena_hash\");});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "02 Obtener usuario por ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Internal-Service-Key",
+                    "value": "{{internal_key}}"
+                  }
+                ],
+                "url": "{{internal_base}}/usuarios/{{usuario_id}}/"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "const j=pm.response.json();",
+                      "pm.test(\"Identificador y rol\",()=>{pm.expect(String(j.usuario_id)).to.eql(pm.collectionVariables.get(\"usuario_id\"));pm.expect(j.rol.nombre).to.eql(\"estudiante\");});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "03 Resolver usuarios y IDs ausentes",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Internal-Service-Key",
+                    "value": "{{internal_key}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{internal_base}}/usuarios/resolver/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"usuarios_ids\": [\n    \"{{usuario_id}}\",\n    \"{{usuario_id}}\",\n    999999\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "const j=pm.response.json();",
+                      "pm.test(\"No duplica usuario y reporta no encontrado\",()=>{pm.expect(j.usuarios).to.have.lengthOf(1);pm.expect(j.no_encontrados).to.include(999999);});"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "02 — Errores intencionales y controles",
+          "item": [
+            {
+              "name": "01 Sin clave interna -> 403",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{internal_base}}/auth/validar/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"{{token_estudiante}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "02 Clave de servicio incorrecta -> 403",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Internal-Service-Key",
+                    "value": "clave-invalida"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{internal_base}}/auth/validar/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"{{token_estudiante}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "03 Token inventado -> 200 valido false",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Internal-Service-Key",
+                    "value": "{{internal_key}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{internal_base}}/auth/validar/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"TOKEN_INVENTADO_QUE_NO_EXISTE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "const j=pm.response.json();",
+                      "pm.test(\"Token inválido sin usuario\",()=>{pm.expect(j.valido).to.eql(false);pm.expect(j.usuario).to.eql(null);pm.expect(j.expira_en).to.eql(null);});"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "04 Falta el token -> 400",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Internal-Service-Key",
+                    "value": "{{internal_key}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{internal_base}}/auth/validar/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                      "pm.test(\"Error del campo token\",()=>pm.expect(pm.response.json()).to.have.property(\"token\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "05 Usuario inexistente -> 404",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Internal-Service-Key",
+                    "value": "{{internal_key}}"
+                  }
+                ],
+                "url": "{{internal_base}}/usuarios/999999/"
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "06 Resolver lista vacía -> 400",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Internal-Service-Key",
+                    "value": "{{internal_key}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{internal_base}}/usuarios/resolver/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"usuarios_ids\": []\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+                      "pm.test(\"Validación de lista\",()=>pm.expect(pm.response.json()).to.have.property(\"usuarios_ids\"));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "07 Resolver sin clave -> 403",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{internal_base}}/usuarios/resolver/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"usuarios_ids\": [\n    1\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 403\", () => pm.response.to.have.status(403));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "08 Gateway no expone API interna -> 404",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Internal-Service-Key",
+                    "value": "{{internal_key}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/internal/auth/validar/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"{{token_estudiante}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "03 — Logout y verificación de revocación (último)",
+          "item": [
+            {
+              "name": "01 Logout público -> 204",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token_estudiante}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}/auth/logout/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "02 Token revocado -> 200 valido false",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Internal-Service-Key",
+                    "value": "{{internal_key}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{internal_base}}/auth/validar/",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"{{token_estudiante}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                      "const j=pm.response.json();",
+                      "pm.test(\"El token no se puede reutilizar\",()=>{pm.expect(j.valido).to.eql(false);pm.expect(j.usuario).to.eql(null);});",
+                      "pm.collectionVariables.unset(\"token_estudiante\");"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "email_estudiante",
+      "value": "esme@bibliotech.com",
+      "type": "string"
+    },
+    {
+      "key": "email_docente",
+      "value": "saul@bibliotech.com",
+      "type": "string"
+    },
+    {
+      "key": "email_bibliotecario",
+      "value": "kalt@bibliotech.com",
+      "type": "string"
+    },
+    {
+      "key": "password_demo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password_nuevo",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token_invalido",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token_estudiante",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token_docente",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token_bibliotecario",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "id_estudiante",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "id_docente",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "id_bibliotecario",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "rol_estudiante_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "rol_docente_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "rol_bibliotecario_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usuario_prueba_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usuario_prueba_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "internal_base",
+      "value": "http://localhost:18081/api/internal",
+      "type": "string"
+    },
+    {
+      "key": "internal_key",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usuario_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

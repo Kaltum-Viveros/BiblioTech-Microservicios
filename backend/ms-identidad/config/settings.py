@@ -20,7 +20,7 @@ DEBUG = os.getenv("DJANGO_DEBUG", "0").lower() in (
     "1", "true", "yes"
 )
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
+SECRET_KEY = os.getenv("IDENTIDAD_DJANGO_SECRET_KEY", "")
 
 if not SECRET_KEY:
     if DEBUG:
