@@ -38,6 +38,11 @@ ALLOWED_HOSTS = lista_entorno(
     "localhost,127.0.0.1,identidad"
 )
 
+ALLOWED_HOSTS = [
+    *ALLOWED_HOSTS,
+    "ms-identidad",
+]
+
 CORS_ALLOWED_ORIGINS = lista_entorno(
     "CORS_ALLOWED_ORIGINS",
     "http://localhost:4200"
@@ -159,3 +164,10 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
+from os import environ
+
+IDENTIDAD_INTERNAL_API_KEY = environ.get(
+    "IDENTIDAD_INTERNAL_API_KEY",
+    ""
+)

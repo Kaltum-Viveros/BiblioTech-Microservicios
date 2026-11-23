@@ -40,8 +40,8 @@ validaciones y respuestas.
 
 | Módulo | Operaciones | Documento |
 |---|---|---|
-| 3.1 Autenticación | Login, logout y permisos | [auth.md](auth.md) |
-| 3.2 Usuarios | Registro, consulta y edición | [usuarios.md](usuarios.md) |
+| MS Identidad (API externa) | Login, logout, sesiones, permisos, usuarios y roles | [ms_identidad_externa.md](ms_identidad_externa.md) |
+| C06 — MS Identidad (API interna) | Validación de tokens y consultas REST entre microservicios | [ms_identidad_interna.md](ms_identidad_interna.md) |
 | 3.3 Libros y ejemplares | Administración bibliográfica | [libros_ejemplares.md](libros_ejemplares.md) |
 | 3.4 Catálogo | Búsqueda y disponibilidad | [API_catalogo.md](../API_catalogo.md) |
 | 3.5 Préstamos | Registro, elegibilidad y listado administrativo | [prestamos.md](prestamos.md) |

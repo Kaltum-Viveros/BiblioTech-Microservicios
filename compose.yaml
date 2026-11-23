@@ -1,16 +1,18 @@
+
 services:
-  # ========================================
-  # BASE DE DATOS DE IDENTIDAD
-  # ========================================
+
+  # ==========================================
+  # BASE DE DATOS DEL MICROSERVICIO IDENTIDAD
+  # ==========================================
   db-identidad:
     image: mysql:8.4
     restart: unless-stopped
 
     environment:
-      MYSQL_DATABASE: ${IDENTIDAD_DB_NAME:-db_identidad}
-      MYSQL_USER: ${IDENTIDAD_DB_USER:-identidad_app}
-      MYSQL_PASSWORD: ${IDENTIDAD_DB_PASSWORD:?Configura IDENTIDAD_DB_PASSWORD en .env}
-      MYSQL_ROOT_PASSWORD: ${IDENTIDAD_DB_ROOT_PASSWORD:?Configura IDENTIDAD_DB_ROOT_PASSWORD en .env}
+      MYSQL_DATABASE: ${IDENTIDAD_DB_NAME:?Configura IDENTIDAD_DB_NAME}
+      MYSQL_USER: ${IDENTIDAD_DB_USER:?Configura IDENTIDAD_DB_USER}
+      MYSQL_PASSWORD: ${IDENTIDAD_DB_PASSWORD:?Configura IDENTIDAD_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${IDENTIDAD_DB_ROOT_PASSWORD:?Configura IDENTIDAD_DB_ROOT_PASSWORD}
 
     volumes:
       - identidad_mysql_data:/var/lib/mysql
@@ -21,35 +23,34 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - 'MYSQL_PWD="$${MYSQL_ROOT_PASSWORD}" mysql --protocol=socket -uroot -Nse "SELECT 1" >/dev/null 2>&1'
-      interval: 5s
+        - 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" mysql --protocol=socket -uroot -Nse "SELECT 1" >/dev/null 2>&1'
+      interval: 10s
       timeout: 5s
-      retries: 20
-      start_period: 40s
+      retries: 12
+      start_period: 30s
 
-  # ========================================
-  # MICROSERVICIO DE IDENTIDAD
-  # ========================================
+  # ==========================================
+  # MICROSERVICIO DE IDENTIDAD - DJANGO REST
+  # ==========================================
   ms-identidad:
     build:
       context: ./backend/ms-identidad
-      dockerfile: Dockerfile
 
     restart: unless-stopped
 
     environment:
-      DJANGO_DEBUG: "1"
-      DJANGO_SECRET_KEY: ${IDENTIDAD_DJANGO_SECRET_KEY:?Configura IDENTIDAD_DJANGO_SECRET_KEY en .env}
-      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,ms-identidad
-      DJANGO_TIME_ZONE: ${DJANGO_TIME_ZONE:-America/Mexico_City}
-      CORS_ALLOWED_ORIGINS: http://localhost:4200
-      AUTH_TOKEN_TTL_HOURS: ${AUTH_TOKEN_TTL_HOURS:-8}
-
       IDENTIDAD_DB_HOST: db-identidad
       IDENTIDAD_DB_PORT: "3306"
-      IDENTIDAD_DB_NAME: ${IDENTIDAD_DB_NAME:-db_identidad}
-      IDENTIDAD_DB_USER: ${IDENTIDAD_DB_USER:-identidad_app}
-      IDENTIDAD_DB_PASSWORD: ${IDENTIDAD_DB_PASSWORD:?Configura IDENTIDAD_DB_PASSWORD en .env}
+      IDENTIDAD_DB_NAME: ${IDENTIDAD_DB_NAME:?Configura IDENTIDAD_DB_NAME}
+      IDENTIDAD_DB_USER: ${IDENTIDAD_DB_USER:?Configura IDENTIDAD_DB_USER}
+      IDENTIDAD_DB_PASSWORD: ${IDENTIDAD_DB_PASSWORD:?Configura IDENTIDAD_DB_PASSWORD}
+
+      IDENTIDAD_DJANGO_SECRET_KEY: ${IDENTIDAD_DJANGO_SECRET_KEY:?Configura IDENTIDAD_DJANGO_SECRET_KEY}
+      IDENTIDAD_INTERNAL_API_KEY: ${IDENTIDAD_INTERNAL_API_KEY:?Configura IDENTIDAD_INTERNAL_API_KEY}
+
+      AUTH_TOKEN_TTL_HOURS: ${AUTH_TOKEN_TTL_HOURS:-8}
+      DJANGO_TIME_ZONE: ${DJANGO_TIME_ZONE:-America/Mexico_City}
+      DJANGO_DEBUG: "1"
 
     volumes:
       - ./backend/ms-identidad:/app
@@ -65,22 +66,23 @@ services:
       - api
       - datos_identidad
 
-    command: python manage.py runserver 0.0.0.0:8000 --noreload
+    command: >
+      python manage.py runserver 0.0.0.0:8000 --noreload
 
     healthcheck:
       test:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready/', timeout=3).read()"
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready/', timeout=3)"
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 40s
+      retries: 5
+      start_period: 20s
 
-  # ========================================
+  # ==========================================
   # API GATEWAY
-  # ========================================
+  # ==========================================
   api_gateway:
     image: nginx:1.28-alpine
     restart: unless-stopped
@@ -98,13 +100,12 @@ services:
     networks:
       - api
 
-  # ========================================
-  # FRONTEND ANGULAR
-  # ========================================
+  # ==========================================
+  # FRONTEND ANGULAR ORIGINAL
+  # ==========================================
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
 
     restart: unless-stopped
 
@@ -122,9 +123,13 @@ services:
     networks:
       - api
 
-    command: ng serve --host 0.0.0.0 --poll 2000
+    command: >
+      ng serve --host 0.0.0.0 --poll 2000
 
 
+# ==========================================
+# REDES
+# ==========================================
 networks:
   api:
 
@@ -132,5 +137,8 @@ networks:
     internal: true
 
 
+# ==========================================
+# VOLUMEN PERSISTENTE DE IDENTIDAD
+# ==========================================
 volumes:
   identidad_mysql_data:
