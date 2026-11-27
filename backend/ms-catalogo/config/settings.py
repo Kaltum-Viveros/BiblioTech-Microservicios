@@ -1,6 +1,6 @@
 """Configuración independiente del microservicio de Catálogo Bibliográfico.
 
-CATA01: infraestructura y pruebas de salud; sin endpoints de negocio.
+CATA04: configuración del cliente de Identidad; aún sin API bibliográfica pública.
 """
 import os
 from django.core.exceptions import ImproperlyConfigured
@@ -54,10 +54,20 @@ USE_I18N = True
 USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CATA01 no ofrece rutas privadas o públicas de negocio.
-# En CATA03 se incorporará la autenticación remota de Identidad.
+# Identidad valida el token del usuario. La clave nunca se expone al navegador.
+IDENTIDAD_INTERNAL_BASE_URL = os.getenv(
+    "IDENTIDAD_INTERNAL_BASE_URL", "http://ms-identidad:8000"
+)
+IDENTIDAD_INTERNAL_API_KEY = os.getenv("IDENTIDAD_INTERNAL_API_KEY", "")
+IDENTIDAD_HTTP_TIMEOUT_SECONDS = float(
+    os.getenv("IDENTIDAD_HTTP_TIMEOUT_SECONDS", "3")
+)
+
+# Las rutas de negocio usarán IsAuthenticated y permisos específicos.
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "catalogo.authentication.CatalogoTokenAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],

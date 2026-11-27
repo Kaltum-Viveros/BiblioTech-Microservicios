@@ -84,3 +84,39 @@ docker compose exec -T ms-catalogo \
 La primera ejecución de pruebas en MySQL puede requerir permisos del usuario de
 Catálogo sobre la base temporal `test_db_catalogo`; no se requieren permisos
 sobre bases de Identidad ni Circulación.
+
+## Integración con Identidad (3.2 — CATA04)
+
+Catálogo no almacena sesiones ni usuarios BiblioTech. Para autorizar una ruta
+protegida recibe `Authorization: Bearer <token>` y realiza una solicitud HTTP
+interna al proveedor de Identidad:
+
+- `POST http://ms-identidad:8000/api/internal/auth/validar/`
+- Cabecera interna: `X-Internal-Service-Key` (solo entre contenedores).
+- JSON de solicitud: `{"token": "<token_Bearer>"}`.
+- `HTTP 200` con `valido: true`: se construye un usuario remoto de solo lectura
+  con rol; el permiso de cada vista decide si puede acceder.
+- `HTTP 200` con `valido: false`: `401` público.
+- Rol sin autorización: `403` público.
+- Identidad inaccesible, timeout, clave interna rechazada o contrato incorrecto:
+  `503` público; nunca se concede acceso por un fallo del proveedor.
+
+El servicio utiliza las variables `IDENTIDAD_INTERNAL_API_KEY`,
+`IDENTIDAD_INTERNAL_BASE_URL` y `IDENTIDAD_HTTP_TIMEOUT_SECONDS`, inyectadas
+por Compose. La clave no debe colocarse en Angular, en los logs ni en Git.
+
+Las vistas administrativas de libros, autores y categorías utilizarán
+`IsAuthenticated` e `IsBibliotecario`; las vistas de consulta del catálogo
+utilizarán `IsAuthenticated` y `PuedeConsultarCatalogo` (estudiante, docente o
+bibliotecario). CATA04 incorpora la infraestructura de autenticación y las
+pruebas con un proveedor HTTP simulado; **todavía no expone endpoints públicos**.
+
+Para verificarla sin necesitar que Identidad esté ejecutándose:
+
+```bash
+docker compose exec -T ms-catalogo \
+  python manage.py test catalogo.tests.test_autenticacion --verbosity 2
+```
+
+El contrato de respuesta de Identidad se describe en
+`Documentacion/API/ms_identidad_interna.md`.
