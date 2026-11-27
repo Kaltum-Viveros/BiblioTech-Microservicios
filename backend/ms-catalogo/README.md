@@ -120,3 +120,37 @@ docker compose exec -T ms-catalogo \
 
 El contrato de respuesta de Identidad se describe en
 `Documentacion/API/ms_identidad_interna.md`.
+
+## Administración bibliográfica (3.2 — CATA05)
+
+Se preservan los endpoints públicos del monolito (`/api/libros/`,
+`/api/autores/`, `/api/categorias/` y sus detalles), con los mismos métodos,
+serializadores, reglas de negocio y paginación. Solo el rol bibliotecario
+puede utilizarlos. El gateway aún no los enruta; se prueban temporalmente
+mediante `http://127.0.0.1:18082/api/` (puerto de depuración).
+
+Antes de ejecutar `check`, se extraen las capas **desde el monolito incluido
+en este mismo repositorio** sin sobrescribir los archivos originales:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose run --rm --no-deps -T \
+  -v "./backend/biblioteca:/fuentes:ro" \
+  ms-catalogo python scripts/extraer_administracion.py --origen /fuentes
+```
+
+El extractor copia las 12 piezas originales de presentación, servicios y
+repositorios. Actualiza `biblioteca.` por `catalogo.`, recupera la validación
+estricta de campos permitidos y elimina la **dependencia de eliminación** de
+libros con ejemplares: no hay endpoint público DELETE, y las existencias
+pertenecen a Circulación. Los métodos de escritura existentes conservan
+sus restricciones. No se copian los modelos ni los datos de otros servicios.
+
+```bash
+docker compose exec -T ms-catalogo python manage.py check
+docker compose exec -T ms-catalogo python manage.py test catalogo.tests --verbosity 2
+```
+
+Nota: sin conexión a Identidad los endpoints protegidos devuelven `503`;
+la suite usa un doble de su cliente HTTP para verificar lógica y permisos.
+No ejecutar `seed_catalogo_demo` si la base se reservará para importar
+registros reales del monolito.
