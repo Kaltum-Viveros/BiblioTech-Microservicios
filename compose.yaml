@@ -81,6 +81,81 @@ services:
       start_period: 20s
 
   # ==========================================
+  # BASE DE DATOS DEL MICROSERVICIO CATALOGO
+  # ==========================================
+  db-catalogo:
+    image: mysql:8.4
+    restart: unless-stopped
+
+    environment:
+      MYSQL_DATABASE: ${CATALOGO_DB_NAME:?Configura CATALOGO_DB_NAME}
+      MYSQL_USER: ${CATALOGO_DB_USER:?Configura CATALOGO_DB_USER}
+      MYSQL_PASSWORD: ${CATALOGO_DB_PASSWORD:?Configura CATALOGO_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${CATALOGO_DB_ROOT_PASSWORD:?Configura CATALOGO_DB_ROOT_PASSWORD}
+
+    volumes:
+      - catalogo_mysql_data:/var/lib/mysql
+
+    networks:
+      - datos_catalogo
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" mysql --protocol=socket -uroot -Nse "SELECT 1" >/dev/null 2>&1'
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # ==========================================
+  # MICROSERVICIO DE CATALOGO - DJANGO REST
+  # ==========================================
+  ms-catalogo:
+    build:
+      context: ./backend/ms-catalogo
+
+    restart: unless-stopped
+
+    environment:
+      CATALOGO_DB_HOST: db-catalogo
+      CATALOGO_DB_PORT: "3306"
+      CATALOGO_DB_NAME: ${CATALOGO_DB_NAME:?Configura CATALOGO_DB_NAME}
+      CATALOGO_DB_USER: ${CATALOGO_DB_USER:?Configura CATALOGO_DB_USER}
+      CATALOGO_DB_PASSWORD: ${CATALOGO_DB_PASSWORD:?Configura CATALOGO_DB_PASSWORD}
+      CATALOGO_DJANGO_SECRET_KEY: ${CATALOGO_DJANGO_SECRET_KEY:?Configura CATALOGO_DJANGO_SECRET_KEY}
+      DJANGO_TIME_ZONE: ${DJANGO_TIME_ZONE:-America/Mexico_City}
+      DJANGO_DEBUG: "1"
+
+    volumes:
+      - ./backend/ms-catalogo:/app
+
+    ports:
+      - "127.0.0.1:18082:8000"
+
+    depends_on:
+      db-catalogo:
+        condition: service_healthy
+
+    networks:
+      - api
+      - datos_catalogo
+
+    command: >
+      python manage.py runserver 0.0.0.0:8000 --noreload
+
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready/', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ==========================================
   # API GATEWAY
   # ==========================================
   api_gateway:
@@ -136,9 +211,13 @@ networks:
   datos_identidad:
     internal: true
 
+  datos_catalogo:
+    internal: true
+
 
 # ==========================================
 # VOLUMEN PERSISTENTE DE IDENTIDAD
 # ==========================================
 volumes:
   identidad_mysql_data:
+  catalogo_mysql_data:
