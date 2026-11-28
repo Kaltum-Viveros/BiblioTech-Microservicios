@@ -170,3 +170,29 @@ la clave identifica al servicio consumidor. Nginx continúa bloqueando `/api/int
 Contrato y ejemplos: `Documentacion/API/ms_catalogo_interna.md`.
 La integración real con Circulación queda pendiente mientras no exista dicho
 microservicio. Las pruebas automatizadas se ejecutan localmente sin Circulación.
+
+## Catálogo de consulta y existencias (3.3 — CATA07)
+
+Rutas de lectura con token Bearer validado mediante Identidad:
+
+- `GET /api/catalogo/` — listado ordenado y paginado (`count`, `next`, `previous`, `results`).
+- `GET /api/catalogo/{libro_id}/` — detalle de una obra.
+- `GET /api/catalogo/filtros/` — autores y categorías para controles del frontend.
+
+Cada obra incorpora `stock_total` y `stock_disponible` obtenidos mediante un
+único contrato REST interno de **Circulación**, sin tablas ni FKs entre servicios.
+`GET /api/catalogo/` hace una llamada por página; con filtro de disponibilidad
+solicita las existencias de todos los candidatos en lotes de 100 antes de paginar.
+La paginación por defecto es 10 (`page_size` opcional hasta 100).
+
+Configurar para `ms-catalogo` en Compose (o entorno equivalente):
+`CIRCULACION_INTERNAL_BASE_URL`, `CIRCULACION_INTERNAL_API_KEY` (mínimo 16
+caracteres), `CIRCULACION_HTTP_TIMEOUT_SECONDS`. La clave pertenece a la API
+interna de **Circulación**: coordinarla con su equipo y no subirla a Git.
+Hasta que Circulación exponga ese contrato, las páginas de libros no vacías
+responderán `503`, nunca una existencia fabricada de cero. El endpoint de
+filtros puede responder aun sin Circulación.
+
+El contrato de consumo y ejemplos están en
+`Documentacion/API/ms_catalogo_publica.md`. Las pruebas usan dobles de Identidad
+y Circulación; la prueba de integración real queda pendiente.

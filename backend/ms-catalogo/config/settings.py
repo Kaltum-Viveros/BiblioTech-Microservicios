@@ -66,6 +66,15 @@ IDENTIDAD_HTTP_TIMEOUT_SECONDS = float(
 # Autorización entre servicios: clave de Catálogo, distinta de la de Identidad.
 CATALOGO_INTERNAL_API_KEY = os.getenv("CATALOGO_INTERNAL_API_KEY", "")
 
+# Existencias: solo a través de REST interno de Circulación (nunca SQL compartido).
+CIRCULACION_INTERNAL_BASE_URL = os.getenv(
+    "CIRCULACION_INTERNAL_BASE_URL", "http://ms-circulacion:8000"
+)
+CIRCULACION_INTERNAL_API_KEY = os.getenv("CIRCULACION_INTERNAL_API_KEY", "")
+CIRCULACION_HTTP_TIMEOUT_SECONDS = float(
+    os.getenv("CIRCULACION_HTTP_TIMEOUT_SECONDS", "3")
+)
+
 # Las rutas de negocio usarán IsAuthenticated y permisos específicos.
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

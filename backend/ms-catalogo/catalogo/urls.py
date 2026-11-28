@@ -26,3 +26,14 @@ urlpatterns += [
     path("internal/libros/resolver/", ResolverLibrosInternoView.as_view(), name="internal-libros-resolver"),
     path("internal/libros/<int:libro_id>/", LibroInternoView.as_view(), name="internal-libros-detail"),
 ]
+
+# Lectura para estudiante, docente y bibliotecario; protegida con Bearer.
+from catalogo.presentation.catalogo_views import (
+    CatalogoListView, CatalogoDetailView, CatalogoFiltrosView,
+)
+
+urlpatterns += [
+    path("catalogo/", CatalogoListView.as_view(), name="catalogo-list"),
+    path("catalogo/filtros/", CatalogoFiltrosView.as_view(), name="catalogo-filtros"),
+    path("catalogo/<int:libro_id>/", CatalogoDetailView.as_view(), name="catalogo-detail"),
+]
