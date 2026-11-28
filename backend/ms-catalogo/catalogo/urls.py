@@ -15,3 +15,14 @@ urlpatterns = [
     path("categorias/", CategoriasListCreateView.as_view(), name="categorias-list-create"),
     path("categorias/<int:categoria_id>/", CategoriaDetailView.as_view(), name="categorias-detail"),
 ]
+
+# API interna: requiere clave propia de Catálogo, inaccesible por Nginx público.
+from catalogo.presentation.internal_views import (
+    LibroInternoView,
+    ResolverLibrosInternoView,
+)
+
+urlpatterns += [
+    path("internal/libros/resolver/", ResolverLibrosInternoView.as_view(), name="internal-libros-resolver"),
+    path("internal/libros/<int:libro_id>/", LibroInternoView.as_view(), name="internal-libros-detail"),
+]

@@ -154,3 +154,19 @@ Nota: sin conexión a Identidad los endpoints protegidos devuelven `503`;
 la suite usa un doble de su cliente HTTP para verificar lógica y permisos.
 No ejecutar `seed_catalogo_demo` si la base se reservará para importar
 registros reales del monolito.
+
+## API interna para Circulación (3.3 — CATA06)
+
+Catálogo expone dos rutas REST **internas**, protegidas por una clave propia:
+
+- `GET /api/internal/libros/{libro_id}/`: obtener bibliografía mínima por ID.
+- `POST /api/internal/libros/resolver/`: resolver hasta 100 IDs por lote, indicando faltantes.
+
+Configura `CATALOGO_INTERNAL_API_KEY` (mínimo 16 caracteres) en `.env` y su
+variable de Compose. Esta clave **no es** `IDENTIDAD_INTERNAL_API_KEY` y no se
+expone al navegador. No se llama a Identidad para autenticar la petición interna;
+la clave identifica al servicio consumidor. Nginx continúa bloqueando `/api/internal/`.
+
+Contrato y ejemplos: `Documentacion/API/ms_catalogo_interna.md`.
+La integración real con Circulación queda pendiente mientras no exista dicho
+microservicio. Las pruebas automatizadas se ejecutan localmente sin Circulación.

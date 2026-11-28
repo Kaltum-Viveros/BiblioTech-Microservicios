@@ -63,6 +63,9 @@ IDENTIDAD_HTTP_TIMEOUT_SECONDS = float(
     os.getenv("IDENTIDAD_HTTP_TIMEOUT_SECONDS", "3")
 )
 
+# Autorización entre servicios: clave de Catálogo, distinta de la de Identidad.
+CATALOGO_INTERNAL_API_KEY = os.getenv("CATALOGO_INTERNAL_API_KEY", "")
+
 # Las rutas de negocio usarán IsAuthenticated y permisos específicos.
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
