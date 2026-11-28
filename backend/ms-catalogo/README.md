@@ -196,3 +196,23 @@ filtros puede responder aun sin Circulación.
 El contrato de consumo y ejemplos están en
 `Documentacion/API/ms_catalogo_publica.md`. Las pruebas usan dobles de Identidad
 y Circulación; la prueba de integración real queda pendiente.
+
+## Gateway público (3.3 — CATA08)
+
+La API administrativa y de catálogo se publica con las rutas originales de
+Angular (`/api/libros/`, `/api/autores/`, `/api/categorias/`, `/api/catalogo/`).
+El gateway conserva la ruta y el Bearer; las APIs `/api/internal/` siguen
+bloqueadas para peticiones externas. El tráfico público **no** transporta la
+clave de servicio `X-Internal-Service-Key`.
+
+Como `infra/nginx/default.conf` es compartido, CATA08 introduce
+`scripts/configurar_gateway_catalogo.py`, un configurador con vista previa
+(`--diff`) y aplicación expresa (`--write`), en lugar de sobrescribir a ciegas
+el archivo. Se detiene si detecta colisiones o no puede verificar el bloqueo
+de la API interna. Incluye 14 pruebas en
+`scripts/test_configurar_gateway_catalogo.py`.
+
+Instrucciones para aplicarlo desde Git Bash, verificar Nginx y probar el
+comportamiento de Angular: `Documentacion/API/ms_catalogo_gateway.md`.
+Una consulta de libros puede responder `503` hasta que Circulación implemente
+el endpoint de existencias; esto no afecta al enrutamiento.
